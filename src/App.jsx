@@ -560,7 +560,7 @@ export default function App() {
     <div className="app" style={{ background: th.bg, color: th.text }}>
       {/* ===== TOP BAR ===== */}
       <div className="app-inner">
-        <div className="top-bar">
+        <div className="top-bar" style={{ borderColor: th.brd, background: settings.dark ? 'rgba(15,17,23,0.85)' : 'rgba(240,244,248,0.85)' }}>
           <div className="app-title" style={{ color: th.ac }}>{"\uD83C\uDF24\uFE0F"} Wetter-Zentrale</div>
           <div className="top-bar-spacer" />
           <div className="search-wrap">
@@ -1047,28 +1047,39 @@ function DetailCharts({ weather, chartRange, setChartRange, detailChartType, set
 
 /* ===== POLLEN ===== */
 function PollenSection({ currentPollen, th }) {
+  const [expandedPollen, setExpandedPollen] = useState(null);
   return (
     <>
       <div className="section-title">{"\uD83C\uDF3C"} Pollenflug</div>
-      <div className="pollen-grid">
-        {currentPollen.map((p, i) => (
+      {currentPollen.map((p, i) => {
+        const expanded = expandedPollen === i;
+        return (
           <div key={i} className="pollen-card" style={{ background: th.card, borderColor: th.brd }}>
-            <div className="pollen-icon">{p.icon}</div>
-            <div className="pollen-name">{p.name}</div>
-            <div className="pollen-level" style={{ color: p.level.c }}>{p.level.l}</div>
-            <div className="pollen-bars">
-              {p.forecast.map((f, j) => (
-                <div key={j} style={{ textAlign: "center" }}>
-                  <div className="pollen-bar" style={{ background: th.acs }}>
-                    <div className="pollen-bar-fill" style={{ height: `${Math.min(100, f.value / 0.6)}%`, background: f.level.c }} />
-                  </div>
-                  <div className="pollen-bar-label" style={{ color: th.ts }}>{f.day}</div>
-                </div>
-              ))}
+            <div className="pollen-header" onClick={() => setExpandedPollen(expanded ? null : i)}>
+              <div className="pollen-icon">{p.icon}</div>
+              <div className="pollen-name">{p.name}</div>
+              <span className="pollen-badge" style={{ background: p.level.c + '22', color: p.level.c }}>{p.level.l}</span>
+              <span style={{ fontSize: '0.8rem', opacity: 0.5, transition: 'transform 0.2s', transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>{"\u25BC"}</span>
             </div>
+            {expanded && (
+              <div className="pollen-expand" style={{ borderColor: th.brd }}>
+                <div style={{ fontSize: '0.78rem', color: th.ts, marginBottom: 8 }}>7-Tage-Vorhersage</div>
+                <div className="pollen-forecast">
+                  {p.forecast.map((f, j) => (
+                    <div key={j} className="pollen-forecast-day">
+                      <div className="pollen-forecast-day-label" style={{ color: th.ts }}>{f.day}</div>
+                      <div className="pollen-forecast-bar" style={{ background: th.acs }}>
+                        <div className="pollen-forecast-bar-fill" style={{ height: `${Math.min(100, f.value / 0.6)}%`, background: f.level.c }} />
+                      </div>
+                      <div className="pollen-forecast-level" style={{ color: f.level.c }}>{f.level.l}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        ))}
-      </div>
+        );
+      })}
     </>
   );
 }
@@ -1104,30 +1115,25 @@ function AirQualitySection({ airQuality, th, device }) {
   return (
     <>
       <div className="section-title">{"\uD83D\uDE37"} Luftqualit\u00e4t</div>
-      <div className="aqi-main">
-        <div className="aqi-gauge" style={{ borderColor: aqi.c, background: th.card }}>
-          <div className="aqi-value" style={{ color: aqi.c }}>{Math.round(cur.european_aqi)}</div>
-          <div className="aqi-label" style={{ color: th.ts }}>EAQI</div>
-          <div className="aqi-emoji">{aqi.emoji}</div>
-        </div>
-        <div>
-          <div style={{ fontSize: 20, fontWeight: 700, color: aqi.c }}>{aqi.l}</div>
-          <div style={{ fontSize: 13, color: th.ts }}>Europ\u00e4ischer Luftqualit\u00e4tsindex</div>
+      <div className="aqi-gauge" style={{ borderColor: aqi.c, background: th.card }}>
+        <div className="aqi-value" style={{ color: aqi.c }}>{Math.round(cur.european_aqi)}</div>
+        <div className="aqi-label" style={{ color: aqi.c }}>{aqi.l} {aqi.emoji}</div>
+        <div style={{ fontSize: '0.82rem', color: th.ts, marginTop: 4 }}>Europ\u00e4ischer Luftqualit\u00e4tsindex</div>
+        <div className="aqi-bar" style={{ background: th.acs }}>
+          <div className="aqi-bar-fill" style={{ width: `${Math.min(100, cur.european_aqi)}%`, background: aqi.c }} />
         </div>
       </div>
 
-      <div className="pollutant-bars">
-        {pollutants.map((p, i) => (
-          <div key={i} className="pollutant-bar" style={{ background: th.card, borderColor: th.brd }}>
-            <div className="pollutant-name" style={{ color: th.ts }}>{p.name}</div>
-            <div className="pollutant-value" style={{ color: p.level.c }}>{p.value != null ? Math.round(p.value) : "\u2013"} \u00b5g/m\u00b3</div>
-            <div className="pollutant-track" style={{ background: th.acs }}>
-              <div className="pollutant-fill" style={{ width: `${Math.min(100, ((p.value || 0) / p.max) * 100)}%`, background: p.level.c }} />
-            </div>
-            <div className="pollutant-level" style={{ color: p.level.c }}>{p.level.l}</div>
+      <div className="section-title" style={{ fontSize: '0.85rem' }}>Schadstoffe</div>
+      {pollutants.map((p, i) => (
+        <div key={i} className="pollutant-card" style={{ background: th.card, borderColor: th.brd }}>
+          <div className="pollutant-name" style={{ color: th.ts }}>{p.name}</div>
+          <div className="pollutant-bar" style={{ background: th.acs }}>
+            <div className="pollutant-bar-fill" style={{ width: `${Math.min(100, ((p.value || 0) / p.max) * 100)}%`, background: p.level.c }} />
           </div>
-        ))}
-      </div>
+          <div className="pollutant-value" style={{ color: p.level.c }}>{p.value != null ? Math.round(p.value) : "\u2013"} \u00b5g/m\u00b3</div>
+        </div>
+      ))}
 
       {trendData.length > 0 && (
         <div className="card" style={{ background: th.card, borderColor: th.brd }}>
