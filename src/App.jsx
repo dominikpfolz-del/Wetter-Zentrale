@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from "react";
 import {
   LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis,
-  CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart,
+  CartesianGrid, Tooltip, Legend, ResponsiveContainer, ComposedChart, ReferenceLine,
 } from "recharts";
 import "./App.css";
 
@@ -40,13 +40,13 @@ const lightTheme = {
   heroGrad:"linear-gradient(135deg, #e0f2fe, #f0f9ff, #ede9fe)",
 };
 const darkTheme = {
-  bg:"#0f1117",card:"#1a1d27",text:"#e2e8f0",ts:"#94a3b8",
-  ac:"#38bdf8",acs:"rgba(56,189,248,0.12)",brd:"#2d3344",
-  dBg:"rgba(239,68,68,0.12)",dBr:"rgba(239,68,68,0.3)",dTx:"#fca5a5",
-  wBg:"rgba(249,115,22,0.12)",wBr:"rgba(249,115,22,0.3)",wTx:"#fdba74",
-  pBg:"rgba(234,179,8,0.12)",pBr:"rgba(234,179,8,0.3)",pTx:"#fde047",
-  oBg:"rgba(34,197,94,0.1)",oBr:"rgba(34,197,94,0.25)",oTx:"#86efac",
-  heroGrad:"linear-gradient(135deg, #1e293b, #0f172a, #1e1b4b)",
+  bg:"#0d1321",card:"rgba(22,28,45,0.85)",text:"#e2e8f0",ts:"#8b9cc0",
+  ac:"#60a5fa",acs:"rgba(96,165,250,0.1)",brd:"rgba(71,85,125,0.35)",
+  dBg:"rgba(239,68,68,0.1)",dBr:"rgba(239,68,68,0.25)",dTx:"#fca5a5",
+  wBg:"rgba(249,115,22,0.1)",wBr:"rgba(249,115,22,0.25)",wTx:"#fdba74",
+  pBg:"rgba(234,179,8,0.1)",pBr:"rgba(234,179,8,0.25)",pTx:"#fde047",
+  oBg:"rgba(34,197,94,0.08)",oBr:"rgba(34,197,94,0.2)",oTx:"#86efac",
+  heroGrad:"linear-gradient(135deg, #131b2e, #0d1321, #1a1540)",
 };
 
 /* ===== HELPER FUNCTIONS ===== */
@@ -307,7 +307,7 @@ export default function App() {
     { label: "Home", icon: "\uD83C\uDFE0" },
     { label: "Heute", icon: "\u23F0" },
     { label: "16 Tage", icon: "\uD83D\uDCC5" },
-    { label: "Mehr", icon: "\u2699\uFE0F" },
+    { label: "Mehr", icon: "\uD83D\uDCCA" },
   ];
 
   // Data state
@@ -711,19 +711,24 @@ function HomeTab({ cur, curW, curComfort, curScore, curClothing, curMoon, weathe
 /* ===== HEUTE TAB ===== */
 function HeuteTab({ todayHourly, selectedHour, setSelectedHour, heuteChartData, heuteChartSeries, setHeuteChartSeries, heuteSeriesConfig, th, settings, device }) {
   const selData = selectedHour != null ? todayHourly[selectedHour] : null;
+  const currentHour = new Date().getHours();
+  const [overviewOpen, setOverviewOpen] = useState(false);
+  const nowLabel = `${String(currentHour).padStart(2,'0')}:00`;
 
   return (
     <>
-      <div className="section-title">{"\u23F0"} Stundenvorhersage</div>
+      <div className="section-title">{"\u23F0"} Stundenvorhersage <span style={{ fontSize: "0.75rem", fontWeight: 500, opacity: 0.7, marginLeft: 8 }}>Jetzt: {nowLabel} Uhr</span></div>
       {/* Hour Cards */}
       <div className="hour-scroll">
         {todayHourly.map((h, i) => {
           const w = getW(h.code);
+          const isNow = h.hour === currentHour;
           return (
-            <div key={i} className={`hour-card ${selectedHour === i ? "selected" : ""}`}
-              style={{ background: th.card, borderColor: selectedHour === i ? th.ac : "transparent" }}
+            <div key={i} className={`hour-card ${selectedHour === i ? "selected" : ""} ${isNow ? "now" : ""}`}
+              style={{ background: isNow ? th.acs : th.card, borderColor: selectedHour === i ? th.ac : isNow ? th.ac : "transparent" }}
               onClick={() => setSelectedHour(selectedHour === i ? null : i)}>
-              <div className="hour-time" style={{ color: th.ts }}>{String(h.hour).padStart(2,'0')}:00</div>
+              {isNow && <div style={{ fontSize: "0.55rem", fontWeight: 800, color: th.ac, textTransform: "uppercase", letterSpacing: 1 }}>Jetzt</div>}
+              <div className="hour-time" style={{ color: isNow ? th.ac : th.ts }}>{String(h.hour).padStart(2,'0')}:00</div>
               <div className="hour-icon">{w.icon}</div>
               <div className="hour-temp">{convertTemp(h.temp, settings.tempUnit)}{"\u00b0"}</div>
               <div className="hour-rain" style={{ color: th.ts }}>{"\uD83C\uDF27\uFE0F"} {h.rainProb}%</div>
@@ -735,7 +740,7 @@ function HeuteTab({ todayHourly, selectedHour, setSelectedHour, heuteChartData, 
       {/* Hour Detail Panel */}
       {selData && (
         <div className="hour-detail" style={{ background: th.card, borderColor: th.ac }}>
-          <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 15 }}>{String(selData.hour).padStart(2,'0')}:00 - {getW(selData.code).label}</div>
+          <div style={{ fontWeight: 700, marginBottom: 8, fontSize: 15 }}>{String(selData.hour).padStart(2,'0')}:00 - {getW(selData.code).label} {selData.hour === currentHour ? <span style={{ color: th.ac, fontSize: "0.75rem" }}>(Aktuell)</span> : ""}</div>
           <div className="hour-detail-grid">
             <div className="hour-detail-item"><div className="hour-detail-label">Temperatur</div>{convertTemp(selData.temp, settings.tempUnit)}{settings.tempUnit}</div>
             <div className="hour-detail-item"><div className="hour-detail-label">Gef\u00fchlt</div>{convertTemp(selData.feels, settings.tempUnit)}{settings.tempUnit}</div>
@@ -753,25 +758,28 @@ function HeuteTab({ todayHourly, selectedHour, setSelectedHour, heuteChartData, 
 
       {/* Rain Probability Bars - ALL 24 hours */}
       <div className="rain-bars-wrap card" style={{ background: th.card, borderColor: th.brd }}>
-        <div className="rain-bars-title">{"\uD83C\uDF27\uFE0F"} Regenwahrscheinlichkeit (24h)</div>
+        <div className="rain-bars-title">{"\uD83C\uDF27\uFE0F"} Regenwahrscheinlichkeit (24h) <span style={{ fontWeight: 500, textTransform: "none", letterSpacing: 0, opacity: 0.7 }}>\u2014 Jetzt: {nowLabel}</span></div>
         <div className="rain-bars-scroll">
           <div className="rain-bars-inner">
-            {todayHourly.map((h, i) => (
-              <div key={i} className="rain-bar-col">
-                <div className="rain-bar-value" style={{ color: th.ts }}>{h.rainProb}%</div>
-                <div className="rain-bar-track" style={{ background: th.acs }}>
-                  <div className="rain-bar-fill" style={{ height: `${h.rainProb}%`, background: h.rainProb > 60 ? "#3b82f6" : h.rainProb > 30 ? "#06b6d4" : "#94a3b8" }} />
+            {todayHourly.map((h, i) => {
+              const isNow = h.hour === currentHour;
+              return (
+                <div key={i} className="rain-bar-col" style={isNow ? { background: th.acs, borderRadius: 6 } : {}}>
+                  <div className="rain-bar-value" style={{ color: isNow ? th.ac : th.ts, fontWeight: isNow ? 800 : 600 }}>{h.rainProb}%</div>
+                  <div className="rain-bar-track" style={{ background: th.acs }}>
+                    <div className="rain-bar-fill" style={{ height: `${h.rainProb}%`, background: isNow ? th.ac : h.rainProb > 60 ? "#3b82f6" : h.rainProb > 30 ? "#06b6d4" : "#94a3b8" }} />
+                  </div>
+                  <div className="rain-bar-time" style={{ color: isNow ? th.ac : th.ts, fontWeight: isNow ? 800 : 600 }}>{isNow ? "Jetzt" : String(h.hour).padStart(2,'0')}</div>
                 </div>
-                <div className="rain-bar-time" style={{ color: th.ts }}>{String(h.hour).padStart(2,'0')}</div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
 
       {/* Multi-series chart */}
       <div className="chart-container card" style={{ background: th.card, borderColor: th.brd }}>
-        <div className="chart-title">{"\uD83D\uDCC8"} Tagesverlauf</div>
+        <div className="chart-title">{"\uD83D\uDCC8"} Tagesverlauf <span style={{ fontSize: "0.75rem", fontWeight: 500, opacity: 0.7 }}>\u2014 Markierung bei {nowLabel}</span></div>
         <div className="chart-toggles">
           {heuteSeriesConfig.map(s => (
             <button key={s.key} className={`chart-toggle ${heuteChartSeries.includes(s.key) ? "active" : ""}`}
@@ -781,34 +789,51 @@ function HeuteTab({ todayHourly, selectedHour, setSelectedHour, heuteChartData, 
         </div>
         <div className="chart-wrap">
           <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={heuteChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+            <ComposedChart data={heuteChartData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke={th.brd} />
               <XAxis dataKey="name" tick={{ fill: th.ts, fontSize: 11 }} interval={device.isPhone ? 3 : 1} />
               <YAxis tick={{ fill: th.ts, fontSize: 11 }} />
               <Tooltip content={<ChartTooltip th={th} />} />
               <Legend />
+              {/* Current time reference line */}
+              <Area type="monotone" dataKey={() => null} />
+              {heuteChartData.map((d, idx) => {
+                if (d.name === nowLabel) {
+                  return <ReferenceLine key="now" x={d.name} stroke={th.ac} strokeWidth={2} strokeDasharray="4 4" label={{ value: "Jetzt", position: "top", fill: th.ac, fontSize: 10, fontWeight: 700 }} />;
+                }
+                return null;
+              }).filter(Boolean)}
               {heuteSeriesConfig.filter(s => heuteChartSeries.includes(s.key)).map(s => (
                 <Line key={s.key} type="monotone" dataKey={s.key} stroke={s.color} strokeWidth={2} dot={false} />
               ))}
-            </LineChart>
+            </ComposedChart>
           </ResponsiveContainer>
         </div>
       </div>
 
-      {/* Full Day Overview */}
-      <div className="section-title">{"\uD83D\uDCCB"} Tages\u00fcbersicht</div>
-      <div className="card" style={{ background: th.card, borderColor: th.brd }}>
-        {todayHourly.map((h, i) => (
-          <div key={i} className="day-overview-item" style={{ borderColor: th.brd }}>
-            <div className="day-overview-time">{String(h.hour).padStart(2,'0')}:00</div>
-            <div className="day-overview-icon">{getW(h.code).icon}</div>
-            <div className="day-overview-temp">{convertTemp(h.temp, settings.tempUnit)}{"\u00b0"}</div>
-            <div className="day-overview-details" style={{ color: th.ts }}>
-              {"\uD83D\uDCA8"}{convertWind(h.wind, settings.windUnit)} {"\uD83C\uDF27\uFE0F"}{h.rainProb}% {"\u2600\uFE0F"}UV{Math.round(h.uv)}
-            </div>
-          </div>
-        ))}
+      {/* Full Day Overview - Collapsible */}
+      <div className="section-title" style={{ cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "space-between", userSelect: "none" }}
+        onClick={() => setOverviewOpen(!overviewOpen)}>
+        <span>{"\uD83D\uDCCB"} Alle 24 Stunden im Detail</span>
+        <span style={{ fontSize: "0.75rem", opacity: 0.6, transition: "transform 0.2s", transform: overviewOpen ? "rotate(180deg)" : "rotate(0)" }}>{"\u25BC"}</span>
       </div>
+      {overviewOpen && (
+        <div className="card" style={{ background: th.card, borderColor: th.brd, animation: "slideDown 0.25s ease" }}>
+          {todayHourly.map((h, i) => {
+            const isNow = h.hour === currentHour;
+            return (
+              <div key={i} className="day-overview-item" style={{ borderColor: th.brd, background: isNow ? th.acs : "transparent", borderRadius: isNow ? 8 : 0 }}>
+                <div className="day-overview-time" style={{ color: isNow ? th.ac : undefined }}>{isNow ? "\u25B6" : ""} {String(h.hour).padStart(2,'0')}:00</div>
+                <div className="day-overview-icon">{getW(h.code).icon}</div>
+                <div className="day-overview-temp">{convertTemp(h.temp, settings.tempUnit)}{"\u00b0"}</div>
+                <div className="day-overview-details" style={{ color: th.ts }}>
+                  {"\uD83D\uDCA8"}{convertWind(h.wind, settings.windUnit)} {"\uD83C\uDF27\uFE0F"}{h.rainProb}% {"\u2600\uFE0F"}UV{Math.round(h.uv)}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
     </>
   );
 }
@@ -1196,8 +1221,39 @@ function WarningsSection({ alerts, th }) {
 
 /* ===== COMPARISON ===== */
 function ComparisonSection({ weather, archive, th, settings, device }) {
-  if (!weather?.daily || !archive?.daily) {
-    return <div style={{ padding: 20, textAlign: "center", color: th.ts }}>Keine Archivdaten verf\u00fcgbar f\u00fcr den Vergleich.</div>;
+  const thisYear = new Date().getFullYear();
+  const [compareYear, setCompareYear] = useState(thisYear - 1);
+  const [compareMonth, setCompareMonth] = useState(new Date().getMonth());
+  const [customArchive, setCustomArchive] = useState(null);
+  const [loadingArchive, setLoadingArchive] = useState(false);
+
+  const monthNames = ["Jänner","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+  const yearOptions = [];
+  for (let y = thisYear - 1; y >= thisYear - 10; y--) yearOptions.push(y);
+
+  // Fetch custom archive when year/month changes
+  useEffect(() => {
+    const fetchArchive = async () => {
+      setLoadingArchive(true);
+      try {
+        const lat = weather?.latitude || 47.0707;
+        const lon = weather?.longitude || 15.4395;
+        const start = `${compareYear}-${String(compareMonth + 1).padStart(2, '0')}-01`;
+        const endD = new Date(compareYear, compareMonth + 1, 0);
+        const end = `${compareYear}-${String(compareMonth + 1).padStart(2, '0')}-${String(endD.getDate()).padStart(2, '0')}`;
+        const res = await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${lat}&longitude=${lon}&start_date=${start}&end_date=${end}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max&timezone=auto`);
+        if (res.ok) { const data = await res.json(); setCustomArchive(data); }
+        else setCustomArchive(null);
+      } catch { setCustomArchive(null); }
+      setLoadingArchive(false);
+    };
+    if (weather) fetchArchive();
+  }, [compareYear, compareMonth, weather]);
+
+  const archiveData = customArchive || archive;
+
+  if (!weather?.daily) {
+    return <div style={{ padding: 20, textAlign: "center", color: th.ts }}>Keine Wetterdaten verfügbar.</div>;
   }
 
   const curDays = weather.daily.time.slice(0, 16).map((t, i) => ({
@@ -1207,21 +1263,21 @@ function ComparisonSection({ weather, archive, th, settings, device }) {
     rain: weather.daily.precipitation_sum[i],
   }));
 
-  const archDays = archive.daily.time.map((t, i) => ({
+  const archDays = archiveData?.daily?.time?.map((t, i) => ({
     day: new Date(t).getDate(),
-    maxTemp: archive.daily.temperature_2m_max[i],
-    minTemp: archive.daily.temperature_2m_min[i],
-    rain: archive.daily.precipitation_sum[i],
-  }));
+    maxTemp: archiveData.daily.temperature_2m_max[i],
+    minTemp: archiveData.daily.temperature_2m_min[i],
+    rain: archiveData.daily.precipitation_sum[i],
+  })) || [];
 
   const tempData = curDays.map(d => {
     const arch = archDays.find(a => a.day === d.day);
     return {
       name: `${d.day}.`,
-      "Max (aktuell)": d.maxTemp,
-      "Min (aktuell)": d.minTemp,
-      "Max (Vorjahr)": arch?.maxTemp,
-      "Min (Vorjahr)": arch?.minTemp,
+      [`Max (${thisYear})`]: d.maxTemp,
+      [`Min (${thisYear})`]: d.minTemp,
+      [`Max (${compareYear})`]: arch?.maxTemp,
+      [`Min (${compareYear})`]: arch?.minTemp,
     };
   });
 
@@ -1229,49 +1285,103 @@ function ComparisonSection({ weather, archive, th, settings, device }) {
     const arch = archDays.find(a => a.day === d.day);
     return {
       name: `${d.day}.`,
-      "Regen (aktuell)": d.rain,
-      "Regen (Vorjahr)": arch?.rain,
+      [`Regen (${thisYear})`]: d.rain,
+      [`Regen (${compareYear})`]: arch?.rain,
     };
   });
+
+  // Stats
+  const avgNow = curDays.length ? (curDays.reduce((s, d) => s + d.maxTemp, 0) / curDays.length).toFixed(1) : "–";
+  const avgArch = archDays.length ? (archDays.reduce((s, d) => s + d.maxTemp, 0) / archDays.length).toFixed(1) : "–";
+  const rainNow = curDays.reduce((s, d) => s + (d.rain || 0), 0).toFixed(1);
+  const rainArch = archDays.reduce((s, d) => s + (d.rain || 0), 0).toFixed(1);
 
   return (
     <>
       <div className="section-title">{"\uD83D\uDCC5"} Jahresvergleich</div>
-      <div className="comparison-section card" style={{ background: th.card, borderColor: th.brd }}>
-        <div className="comparison-title">Temperaturvergleich</div>
-        <div className="chart-wrap">
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={tempData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={th.brd} />
-              <XAxis dataKey="name" tick={{ fill: th.ts, fontSize: 11 }} />
-              <YAxis tick={{ fill: th.ts, fontSize: 11 }} />
-              <Tooltip content={<ChartTooltip th={th} />} />
-              <Legend />
-              <Line type="monotone" dataKey="Max (aktuell)" stroke="#ef4444" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Min (aktuell)" stroke="#3b82f6" strokeWidth={2} dot={false} />
-              <Line type="monotone" dataKey="Max (Vorjahr)" stroke="#ef4444" strokeWidth={1} strokeDasharray="5 5" dot={false} />
-              <Line type="monotone" dataKey="Min (Vorjahr)" stroke="#3b82f6" strokeWidth={1} strokeDasharray="5 5" dot={false} />
-            </LineChart>
-          </ResponsiveContainer>
+
+      {/* Year & Month Selector */}
+      <div className="card" style={{ background: th.card, borderColor: th.brd, marginBottom: 12 }}>
+        <div style={{ fontSize: "0.82rem", fontWeight: 700, marginBottom: 10 }}>{"\u2699\uFE0F"} Vergleichszeitraum wählen</div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: "0.78rem", color: th.ts, fontWeight: 600 }}>Jahr:</span>
+            <select value={compareYear} onChange={e => setCompareYear(Number(e.target.value))}
+              style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${th.brd}`, background: th.card, color: th.text, fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>
+              {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: "0.78rem", color: th.ts, fontWeight: 600 }}>Monat:</span>
+            <select value={compareMonth} onChange={e => setCompareMonth(Number(e.target.value))}
+              style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${th.brd}`, background: th.card, color: th.text, fontSize: "0.82rem", fontWeight: 600, cursor: "pointer" }}>
+              {monthNames.map((m, i) => <option key={i} value={i}>{m}</option>)}
+            </select>
+          </div>
+          {loadingArchive && <span style={{ fontSize: "0.75rem", color: th.ac }}>Lade...</span>}
+        </div>
+        <div style={{ fontSize: "0.72rem", color: th.ts, marginTop: 8 }}>
+          Vergleiche aktuelle Vorhersage ({thisYear}) mit {monthNames[compareMonth]} {compareYear}
         </div>
       </div>
 
-      <div className="comparison-section card" style={{ background: th.card, borderColor: th.brd }}>
-        <div className="comparison-title">Niederschlagsvergleich</div>
-        <div className="chart-wrap">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={rainData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke={th.brd} />
-              <XAxis dataKey="name" tick={{ fill: th.ts, fontSize: 11 }} />
-              <YAxis tick={{ fill: th.ts, fontSize: 11 }} />
-              <Tooltip content={<ChartTooltip th={th} />} />
-              <Legend />
-              <Bar dataKey="Regen (aktuell)" fill="#3b82f6" opacity={0.8} />
-              <Bar dataKey="Regen (Vorjahr)" fill="#94a3b8" opacity={0.5} />
-            </BarChart>
-          </ResponsiveContainer>
+      {/* Stats Summary */}
+      <div className="compare-stats">
+        <div className="compare-stat" style={{ background: th.card, borderColor: th.brd }}>
+          <div className="compare-stat-value" style={{ color: "#ef4444" }}>{avgNow}{"\u00b0"}</div>
+          <div className="compare-stat-label" style={{ color: th.ts }}>{"\u00d8"} Max {thisYear}</div>
+        </div>
+        <div className="compare-stat" style={{ background: th.card, borderColor: th.brd }}>
+          <div className="compare-stat-value" style={{ color: "#f97316" }}>{avgArch}{"\u00b0"}</div>
+          <div className="compare-stat-label" style={{ color: th.ts }}>{"\u00d8"} Max {compareYear}</div>
+        </div>
+        <div className="compare-stat" style={{ background: th.card, borderColor: th.brd }}>
+          <div className="compare-stat-value" style={{ color: "#3b82f6" }}>{rainNow} / {rainArch}mm</div>
+          <div className="compare-stat-label" style={{ color: th.ts }}>Regen {"\u03A3"}</div>
         </div>
       </div>
+
+      {archDays.length === 0 && !loadingArchive ? (
+        <div style={{ padding: 20, textAlign: "center", color: th.ts, fontSize: "0.85rem" }}>Keine Archivdaten für {monthNames[compareMonth]} {compareYear} verfügbar.</div>
+      ) : (
+        <>
+          <div className="comparison-section card" style={{ background: th.card, borderColor: th.brd }}>
+            <div className="comparison-title">Temperaturvergleich: {thisYear} vs {compareYear}</div>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={250}>
+                <LineChart data={tempData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={th.brd} />
+                  <XAxis dataKey="name" tick={{ fill: th.ts, fontSize: 11 }} />
+                  <YAxis tick={{ fill: th.ts, fontSize: 11 }} />
+                  <Tooltip content={<ChartTooltip th={th} />} />
+                  <Legend />
+                  <Line type="monotone" dataKey={`Max (${thisYear})`} stroke="#ef4444" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey={`Min (${thisYear})`} stroke="#3b82f6" strokeWidth={2} dot={false} />
+                  <Line type="monotone" dataKey={`Max (${compareYear})`} stroke="#ef4444" strokeWidth={1} strokeDasharray="5 5" dot={false} />
+                  <Line type="monotone" dataKey={`Min (${compareYear})`} stroke="#3b82f6" strokeWidth={1} strokeDasharray="5 5" dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="comparison-section card" style={{ background: th.card, borderColor: th.brd }}>
+            <div className="comparison-title">Niederschlagsvergleich: {thisYear} vs {compareYear}</div>
+            <div className="chart-wrap">
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={rainData} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={th.brd} />
+                  <XAxis dataKey="name" tick={{ fill: th.ts, fontSize: 11 }} />
+                  <YAxis tick={{ fill: th.ts, fontSize: 11 }} />
+                  <Tooltip content={<ChartTooltip th={th} />} />
+                  <Legend />
+                  <Bar dataKey={`Regen (${thisYear})`} fill="#3b82f6" opacity={0.8} />
+                  <Bar dataKey={`Regen (${compareYear})`} fill="#94a3b8" opacity={0.5} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </>
+      )}
     </>
   );
 }
